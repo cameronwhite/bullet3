@@ -49,6 +49,7 @@ static CommonParameterInterface*	s_parameterInterface=0;
 static CommonRenderInterface*	s_instancingRenderer=0;
 static OpenGLGuiHelper*	s_guiHelper=0;
 static MyProfileWindow* s_profWindow =0;
+static SharedMemoryInterface* sSharedMem = 0;
 
 #define DEMO_SELECTION_COMBOBOX 13
 const char* startFileName = "0_Bullet3Demo.txt";
@@ -71,6 +72,7 @@ extern bool useShadowMap;
 static bool visualWireframe=false;
 static bool renderVisualGeometry=true;
 static bool renderGrid = true;
+static bool renderGui = true;
 static bool enable_experimental_opencl = false;
 
 int gDebugDrawFlags = 0;
@@ -170,6 +172,7 @@ void MyKeyboardCallback(int key, int state)
 	if (key=='g' && state)
 	{
 		renderGrid = !renderGrid;
+		renderGui = !renderGui;
 	}
 
 
@@ -324,6 +327,7 @@ void selectDemo(int demoIndex)
 		int option = gAllExamples->getExampleOption(demoIndex);
 		s_guiHelper= new OpenGLGuiHelper(s_app, sUseOpenGL2);
 		CommonExampleOptions options(s_guiHelper, option);
+		options.m_sharedMem = sSharedMem;
 		sCurrentDemo = (*func)(options);
 		if (sCurrentDemo)
 		{
@@ -1041,7 +1045,7 @@ void OpenGLExampleBrowser::update(float deltaTime)
 		}
 
 		static int toggle = 1;
-		if (1)
+		if (renderGui)
 		{
             if (!pauseSimulation)
                 processProfileData(s_profWindow,false);
@@ -1075,4 +1079,9 @@ void OpenGLExampleBrowser::update(float deltaTime)
 	
 		gui->forceUpdateScrollBars();
 
+}
+
+void OpenGLExampleBrowser::setSharedMemoryInterface(class SharedMemoryInterface* sharedMem)
+{
+	sSharedMem = sharedMem;
 }

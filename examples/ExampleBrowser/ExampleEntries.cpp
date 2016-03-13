@@ -1,5 +1,3 @@
-
-
 #include "ExampleEntries.h"
 
 #include "LinearMath/btAlignedObjectArray.h"
@@ -11,19 +9,24 @@
 #include "../BasicDemo/BasicExample.h"
 #include "../Planar2D/Planar2D.h"
 #include "../Benchmarks/BenchmarkDemo.h"
+#ifdef ENABLE_URDF_OBJ
 #include "../Importers/ImportObjDemo/ImportObjExample.h"
+#endif
 #include "../Importers/ImportBsp/ImportBspExample.h"
 #include "../Importers/ImportColladaDemo/ImportColladaSetup.h"
 #include "../Importers/ImportSTLDemo/ImportSTLSetup.h"
 #include "../Importers/ImportURDFDemo/ImportURDFSetup.h"
-
+#include "../Collision/CollisionTutorialBullet2.h"
 #include "../GyroscopicDemo/GyroscopicSetup.h"
 #include "../Constraints/Dof6Spring2Setup.h"
 #include "../Constraints/ConstraintPhysicsSetup.h"
 #include "../MultiBody/TestJointTorqueSetup.h"
+#include "../MultiBody/Pendulum.h"
+#include "../MultiBody/MultiBodySoftContact.h"
 #include "../MultiBody/MultiBodyConstraintFeedback.h"
 #include "../MultiBody/MultiDofDemo.h"
 #include "../MultiBody/InvertedPendulumPDControl.h"
+#include "../RigidBody/RigidBodySoftContact.h"
 #include "../VoronoiFracture/VoronoiFractureDemo.h"
 #include "../SoftDemo/SoftDemo.h"
 #include "../Constraints/ConstraintDemo.h"
@@ -40,6 +43,8 @@
 #include "../Tutorial/Tutorial.h"
 #include "../Tutorial/Dof6ConstraintTutorial.h"
 #include "../MultiThreading/MultiThreadingExample.h"
+#include "../InverseDynamics/InverseDynamicsExample.h"
+
 #ifdef ENABLE_LUA
 #include "../LuaDemo/LuaPhysicsSetup.h"
 #endif
@@ -99,25 +104,37 @@ static ExampleEntry gDefaultExamples[]=
 	
 	ExampleEntry(1,"Gyroscopic", "Show the Dzhanibekov effect using various settings of the gyroscopic term. You can select the gyroscopic term computation using btRigidBody::setFlags, with arguments BT_ENABLE_GYROSCOPIC_FORCE_EXPLICIT (using explicit integration, which adds energy and can lead to explosions), BT_ENABLE_GYROSCOPIC_FORCE_IMPLICIT_WORLD, BT_ENABLE_GYROSCOPIC_FORCE_IMPLICIT_BODY. If you don't set any of these flags, there is no gyroscopic term used.", GyroscopicCreateFunc),
 
+	ExampleEntry(1,"Soft Contact", "Using the error correction parameter (ERP) and constraint force mixing (CFM) values for contacts to simulate compliant contact.",RigidBodySoftContactCreateFunc),
 
 	
 
 	ExampleEntry(0,"MultiBody"),
 	ExampleEntry(1,"MultiDofCreateFunc","Create a basic btMultiBody with 3-DOF spherical joints (mobilizers). The demo uses a fixed base or a floating base at restart.", MultiDofCreateFunc),
 	ExampleEntry(1,"TestJointTorque","Apply a torque to a btMultiBody with 1-DOF joints (mobilizers). This setup is similar to API/TestHingeTorque.", TestJointTorqueCreateFunc),
+	ExampleEntry(1,"TestPendulum","Simulate a pendulum using btMultiBody with a constant joint torque applied. The same code is also used as a unit test comparing Bullet with the numerical solution of second-order non-linear differential equation stored in pendulum_gold.h", TestPendulumCreateFunc),
+	
  ExampleEntry(1,"Constraint Feedback", "The example shows how to receive joint reaction forces in a btMultiBody. Also the applied impulse is available for a btMultiBodyJointMotor", MultiBodyConstraintFeedbackCreateFunc),
 	ExampleEntry(1,"Inverted Pendulum PD","Keep an inverted pendulum up using open loop PD control", InvertedPendulumPDControlCreateFunc),
+	  ExampleEntry(1,"MultiBody Soft Contact", "Using the error correction parameter (ERP) and constraint force mixing (CFM) values for contacts to simulate compliant contact.",MultiBodySoftContactCreateFunc,0),
 
+
+	 ExampleEntry(0,"Inverse Dynamics"),
+      ExampleEntry(1,"Inverse Dynamics URDF", "Create a btMultiBody from URDF. Create an inverse MultiBodyTree model from that. Use either decoupled PD control or computed torque control using the inverse model to track joint position targets", InverseDynamicsExampleCreateFunc,BT_ID_LOAD_URDF),
+      ExampleEntry(1,"Inverse Dynamics Prog", "Create a btMultiBody programatically. Create an inverse MultiBodyTree model from that. Use either decoupled PD control or computed torque control using the inverse model to track joint position targets", InverseDynamicsExampleCreateFunc,BT_ID_PROGRAMMATICALLY),
+	
 	
 	ExampleEntry(0,"Tutorial"),
 	ExampleEntry(1,"Constant Velocity","Free moving rigid body, without external or constraint forces", TutorialCreateFunc,TUT_VELOCITY),
 	ExampleEntry(1,"Gravity Acceleration","Motion of a free falling rigid body under constant gravitational acceleration", TutorialCreateFunc,TUT_ACCELERATION),
 	ExampleEntry(1,"Contact Computation","Discrete Collision Detection for sphere-sphere", TutorialCreateFunc,TUT_COLLISION),
 	ExampleEntry(1,"Solve Contact Constraint","Compute and apply the impulses needed to satisfy non-penetrating contact constraints", TutorialCreateFunc,TUT_SOLVE_CONTACT_CONSTRAINT),
-
-	
-	
 	ExampleEntry(1,"Spring constraint","A rigid body with a spring constraint attached", Dof6ConstraintTutorialCreateFunc,0),
+
+	ExampleEntry(0,"Collision"),
+	ExampleEntry(1, "Spheres & Plane C-API (Bullet2)", "Collision C-API using Bullet 2.x backend", CollisionTutorialBullet2CreateFunc,TUT_SPHERE_PLANE_BULLET2),
+	//ExampleEntry(1, "Spheres & Plane C-API (Bullet3)", "Collision C-API using Bullet 3.x backend", CollisionTutorialBullet2CreateFunc,TUT_SPHERE_PLANE_RTB3),
+		
+	
 
 #ifdef INCLUDE_CLOTH_DEMOS
 	ExampleEntry(0,"Soft Body"),
@@ -177,9 +194,9 @@ static ExampleEntry gDefaultExamples[]=
 
 	ExampleEntry(0,"Importers"),
 	ExampleEntry(1,"Import .bullet", "Load a binary .bullet file. The serialization mechanism can deal with versioning, differences in endianess, 32 and 64bit, double/single precision. It is easy to save a .bullet file, see the examples/Importers/ImportBullet/SerializeDemo.cpp for a code example how to export a .bullet file.", SerializeBulletCreateFunc),
-	
+#ifdef ENABLE_URDF_OBJ	
 	ExampleEntry(1,"Wavefront Obj", "Import a Wavefront .obj file", ImportObjCreateFunc, 0),
-
+#endif
 	ExampleEntry(1,"Quake BSP", "Import a Quake .bsp file", ImportBspCreateFunc, 0),
 	ExampleEntry(1,"COLLADA dae", "Import the geometric mesh data from a COLLADA file. This is used as part of the URDF importer. This loader can also be used to import collision geometry in general. ", 
 					ImportColladaCreateFunc, 0),
@@ -212,6 +229,11 @@ static ExampleEntry gDefaultExamples[]=
 	
 	ExampleEntry(1,"Physics Server", "Create a physics server that communicates with a physics client over shared memory",
 			PhysicsServerCreateFunc),
+	ExampleEntry(1,"Physics Server (Logging)", "Create a physics server that communicates with a physics client over shared memory. It will log all commands to a file.",
+			PhysicsServerCreateFunc,PHYSICS_SERVER_ENABLE_COMMAND_LOGGING),
+	ExampleEntry(1,"Physics Server (Replay Log)", "Create a physics server that replay a command log from disk.",
+			PhysicsServerCreateFunc,PHYSICS_SERVER_REPLAY_FROM_COMMAND_LOG),
+
 	ExampleEntry(1, "Physics Client", "Create a physics client that can communicate with a physics server over shared memory", PhysicsClientCreateFunc),
 #ifdef ENABLE_LUA
 	ExampleEntry(1,"Lua Script", "Create the dynamics world, collision shapes and rigid bodies using Lua scripting",

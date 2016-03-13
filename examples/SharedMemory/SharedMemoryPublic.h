@@ -9,8 +9,8 @@ enum EnumSharedMemoryClientCommand
         CMD_SEND_BULLET_DATA_STREAM,
         CMD_CREATE_BOX_COLLISION_SHAPE,
 //      CMD_DELETE_BOX_COLLISION_SHAPE,
-//      CMD_CREATE_RIGID_BODY,
-//      CMD_DELETE_RIGID_BODY,
+      CMD_CREATE_RIGID_BODY,
+      CMD_DELETE_RIGID_BODY,
     CMD_CREATE_SENSOR,///enable or disable joint feedback for force/torque sensors
 //    CMD_REQUEST_SENSOR_MEASUREMENTS,//see CMD_REQUEST_ACTUAL_STATE/CMD_ACTUAL_STATE_UPDATE_COMPLETED
         CMD_INIT_POSE,
@@ -30,7 +30,6 @@ enum EnumSharedMemoryServerStatus
 {
         CMD_SHARED_MEMORY_NOT_INITIALIZED=0,
         CMD_WAITING_FOR_CLIENT_COMMAND,
-
         //CMD_CLIENT_COMMAND_COMPLETED is a generic 'completed' status that doesn't need special handling on the client
         CMD_CLIENT_COMMAND_COMPLETED,
         //the server will skip unknown command and report a status 'CMD_UNKNOWN_COMMAND_FLUSHED'
@@ -50,6 +49,7 @@ enum EnumSharedMemoryServerStatus
         CMD_DESIRED_STATE_RECEIVED_COMPLETED,
         CMD_STEP_FORWARD_SIMULATION_COMPLETED,
 	CMD_RESET_SIMULATION_COMPLETED,
+		CMD_INVALID_STATUS,
         CMD_MAX_SERVER_COMMANDS
 };
 
@@ -57,6 +57,25 @@ enum JointInfoFlags
 {
     JOINT_HAS_MOTORIZED_POWER=1,
 };
+
+enum 
+{
+	COLLISION_SHAPE_TYPE_BOX=1,
+	COLLISION_SHAPE_TYPE_CYLINDER_X,
+	COLLISION_SHAPE_TYPE_CYLINDER_Y,
+	COLLISION_SHAPE_TYPE_CYLINDER_Z,
+	COLLISION_SHAPE_TYPE_CAPSULE_X,
+	COLLISION_SHAPE_TYPE_CAPSULE_Y,
+	COLLISION_SHAPE_TYPE_CAPSULE_Z,
+	COLLISION_SHAPE_TYPE_SPHERE
+};
+
+// copied from btMultiBodyLink.h
+enum JointType {
+    eRevoluteType = 0,
+    ePrismaticType = 1,
+};
+
 struct b3JointInfo
 {
         char* m_linkName;
